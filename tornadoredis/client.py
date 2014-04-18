@@ -321,6 +321,7 @@ class Client(object):
         raise ConnectionError("Socket closed on remote end")
 
     #### connection
+    @gen.engine
     def connect(self):
         if not self.connection.connected():
             pool = self._connection_pool
@@ -329,7 +330,7 @@ class Client(object):
                 self.connection = pool.get_connection(event_handler_ref=self)
                 self.connection.ready_callbacks = old_conn.ready_callbacks
             else:
-                self.connection.connect()
+                yield gen.Task(self.connection.connect)
 
     @gen.engine
     def disconnect(self, callback=None):
@@ -402,7 +403,7 @@ class Client(object):
         while n_tries > 0:
             n_tries -= 1
             if not self.connection.connected():
-                self.connection.connect()
+                yield gen.Task(self.connection.connect)
 
             if not self.subscribed and not self.connection.ready():
                 yield gen.Task(self.connection.wait_until_ready)
@@ -1281,7 +1282,7 @@ class Pipeline(Client):
                 yield gen.Task(self.select, self.selected_db)
 
             if not self.connection.connected():
-                self.connection.connect()
+                yield gen.Task(self.connection.connect)
 
             if not self.connection.ready():
                 yield gen.Task(self.connection.wait_until_ready)
