@@ -66,10 +66,7 @@ class Connection(object):
                     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
                     endpoint = self.unix_socket_path
                 else:
-                    sock = socket.create_connection(
-                        (self.host, self.port),
-                        timeout=self.timeout
-                    )
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
                     sock.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
                     endpoint = (self.host, self.port)
                 sock.settimeout(self.timeout)
