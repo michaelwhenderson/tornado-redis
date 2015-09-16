@@ -405,7 +405,9 @@ class Client(object):
         while n_tries > 0:
             n_tries -= 1
             if not self.connection.connected():
-                yield gen.Task(self.connection.connect)
+                result = yield gen.Task(self.connection.connect)
+                if result.kwargs.get('failed'):
+                    raise Exception('failed to connect to redis')
 
             if not self.subscribed and not self.connection.ready():
                 yield gen.Task(self.connection.wait_until_ready)

@@ -71,6 +71,7 @@ class Connection(object):
                     endpoint = (self.host, self.port)
                 sock.settimeout(self.timeout)
                 self._stream = IOStream(sock, io_loop=self._io_loop)
+                self._stream.set_close_callback(partial(self.on_stream_close, failed=True, callback=callback))
                 self._stream.connect(endpoint, partial(self._on_connect, callback))
             except socket.error as e:
                 raise ConnectionError(str(e))
@@ -79,16 +80,18 @@ class Connection(object):
         self.info['db'] = 0
         self.info['pass'] = None
         self._stream.set_close_callback(self.on_stream_close)
-        callback()
+        callback(failed=False)
         self.fire_event('on_connect')
 
-    def on_stream_close(self):
+    def on_stream_close(self, failed=False, callback=None):
         if self._stream:
             self.disconnect()
-            callbacks = self.read_callbacks
+            read_callbacks = self.read_callbacks
             self.read_callbacks = set()
-            for callback in callbacks:
-                callback()
+            for read_callback in read_callbacks:
+                read_callback()
+        if callback:
+            callback(failed=failed)
 
     def disconnect(self):
         if self._stream:
